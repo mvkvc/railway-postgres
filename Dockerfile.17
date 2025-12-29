@@ -1,5 +1,27 @@
-ARG POSTGRES_VERSION=17
-FROM postgres:${POSTGRES_VERSION}
+FROM postgres:17
+
+RUN apt-get update && apt-get install -y lsb-release wget gnupg curl ca-certificates unzip
+
+# Add PostgreSQL APT repository
+RUN install -d /usr/share/postgresql-common/pgdg
+RUN curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+RUN . /etc/os-release && \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+# Add TimescaleDB APT repository
+RUN echo "deb https://packagecloud.io/timescale/timescaledb/debian/ $(lsb_release -c -s) main" > /etc/apt/sources.list.d/timescaledb.list
+RUN wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor -o /etc/apt/trusted.gpg.d/timescaledb.gpg
+
+# Install pg_textsearch from pre-built binary
+RUN wget -q https://github.com/timescale/pg_textsearch/releases/download/v0.1.0/pg-textsearch-v0.1.0-pg17-amd64.zip -O /tmp/pg_textsearch.zip && \
+    unzip -o /tmp/pg_textsearch.zip -d /tmp/pg_textsearch && \
+    dpkg -i /tmp/pg_textsearch/*.deb && \
+    rm -rf /tmp/pg_textsearch.zip /tmp/pg_textsearch
+
+# Update package lists and install extensions
+RUN apt-get update && apt-get install -y \
+    postgresql-17-pgvector \
+    timescaledb-2-postgresql-17
 
 # Install OpenSSL and sudo
 RUN apt-get update && apt-get install -y openssl sudo
