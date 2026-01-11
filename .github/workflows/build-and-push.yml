@@ -1,9 +1,12 @@
 name: Build and Push PostgreSQL Images
 
 on:
-  schedule:
-    - cron: "0 0 * * 1"  # Every Monday at midnight UTC
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: true
+        default: 'dev'
 
 env:
   LATEST_POSTGRES_MAJOR: 17  # Change this to update which version gets tagged as 'latest'
@@ -23,6 +26,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Get latest PostgreSQL version
         id: get_version
